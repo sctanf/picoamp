@@ -82,7 +82,7 @@ int32_t actual_vol = 0;
 dspfx limit[192]; // sample store
 int limit_index = 0;
 int32_t limit_vol = 0;
-#define LIMIT_MUL ((dspfx)(0.05*(double)(1<<30)))
+#define LIMIT_MUL ((dspfx)(0.04*(double)(1<<30)))
 #define BASS_MUL floatfx(1./8.)
 int64_t targ = 0;
 #define BASS_STEP 600000
