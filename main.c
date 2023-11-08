@@ -365,11 +365,13 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     limit[limit_index] = fxabs(buf1[1]);
     if (limit[limit_index]>0) limit_index++;
     limit_index %= 192;
-    dspfx max = LIMIT_MUL;
+    dspfx max = 0;
     for (int i = 0; i < 192; i++) // 8 us
     {
         if (limit[i]>max) max = limit[i];
     }
+//    if (max < 15000) return;
+    if (max < LIMIT_MUL) max = LIMIT_MUL;
     int64_t actualtarg = (int64_t)(LIMIT_MUL - mulfx(max, BASS_MUL)) * (int64_t)(1<<30) / (int64_t)(max - mulfx(max, BASS_MUL)); // target mix to limit bass
     if (actualtarg < 0) actualtarg = 0; // if the mix goes negative, ignore it
     
@@ -385,8 +387,8 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
         if (buf0[i+1] < (-1<<30)) buf0[i+1] = (-1<<30);
     }
 #endif
-//    while (bufring1.len>1024-32-2-(count * 2)) {tight_loop_contents();}
-while(bufring1.corelock == 2) {tight_loop_contents();}
+//    while (bufring1.len > 1024-32-2-(count * 2)) {tight_loop_contents();}
+while (bufring1.corelock == 2) {tight_loop_contents();}
 bufring1.corelock = 1; // 20us
     audioi2sconstuff2();
     int curin = bufring1.index;

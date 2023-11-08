@@ -103,11 +103,18 @@ static void update_pio_frequency(uint32_t sample_freq) {
 }
 
 static inline void audio_start_dma_transfer() {
-while(bufring2->corelock == 1) {tight_loop_contents();}
+while (bufring2->corelock == 1) {tight_loop_contents();}
 bufring2->corelock = 2;
     if (bufring2->len < 2) {
 bufring2->corelock = 0;
         // just play some silence
+/*
+irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, false);
+pio_sm_set_enabled(audio_pio, shared_state.pio_sm, false);
+while (bufring2->len < 2) {tight_loop_contents();}
+irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, true);
+pio_sm_set_enabled(audio_pio, shared_state.pio_sm, true);
+*/
         static uint32_t zero;
         dma_channel_config c = dma_get_channel_config(shared_state.dma_channel);
         channel_config_set_read_increment(&c, false);
