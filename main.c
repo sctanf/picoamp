@@ -690,7 +690,7 @@ int32_t db_to_vol_hp[100] = {0x40000000,0x390a415f,0x32d64617,0x2d4efbd5,0x28619
 #define ENCODE_DB(x) ((uint16_t)(int16_t)((x)*256))
 
 #define MIN_VOLUME           ENCODE_DB(-CENTER_VOLUME_INDEX)
-#define DEFAULT_VOLUME       -27<<8 // -27dB
+#define DEFAULT_VOLUME       -6<<8 // -6dB
 #define MAX_VOLUME           0
 #define VOLUME_RESOLUTION    1
 
