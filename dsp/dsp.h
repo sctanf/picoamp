@@ -25,6 +25,7 @@ typedef int32_t dspfx;
 
 #define fpformat3 28
 #define mulfx0(a,b) ((int64_t)(a)*(int64_t)(b))
+#define mulfx3(a,b) ((dspfx)(((int64_t)(a)*(int64_t)(b))>>fpformat3))
 #define fxint3(a) ((a)>>fpformat3)
 #define mulshift(a) ((dspfx)fxint3(a))
 #define floatfx3(a) ((int64_t)((a)*(1<<fpformat3)))
@@ -44,6 +45,8 @@ typedef struct {
 #define biquad(a) biquad a = {.a1z=0,.a2z=0,.b1z=0,.b2z=0,.a1zr=0,.a2zr=0,.b1zr=0,.b2zr=0};
 #define biquadconstfx(a,b,c,d,e) floatfx3(a),floatfx3(b),floatfx3(c),floatfx3(d),floatfx3(e)
 #define biquadconstsfx(a) biquadconstfx(a)
+#define hgconstfx(a,b,c,d,e,f,g,h) floatfx3(a),floatfx3(b),floatfx3(c),floatfx3(d),floatfx3(e),floatfx3(f),floatfx3(g),floatfx3(h)
+#define hgconstsfx(a) hgconstfx(a)
 
 static inline void process_fwi(fwi *const filter, int16_t iters, int32_t *in, int32_t *out) {
 	int16_t iters2 = iters * 2;
@@ -75,6 +78,28 @@ static inline void process_biquad(biquad *const filter, int64_t a0, int64_t a1, 
 	filter->b2zr = out[iters2 - 3];
 	filter->a1zr = in[iters2 - 1];
 	filter->b1zr = out[iters2 - 1];
+}
+
+static inline void process_harmonic_generator(int64_t d0, int64_t d1, int64_t d2, int64_t d3, int64_t d4, int64_t d5, int64_t d6, int64_t d7, int16_t iters, int32_t *in, int32_t *out) {
+	int16_t iters2 = iters * 2;
+	for (int i = 0; i < iters2; i++) {
+		out[i] =
+			d0 + mulfx3(
+				d1 + mulfx3(
+					d2 + mulfx3(
+						d3 + mulfx3(
+							d4 + mulfx3(
+								d5 + mulfx3(
+									d6 + mulfx3(
+										d7,
+										in[i]),
+									in[i]),
+								in[i]),
+							in[i]),
+						in[i]),
+					in[i]),
+				in[i]);
+	}
 }
 
 #endif
