@@ -115,6 +115,7 @@ int corelock;
 } bufring_t;
 void audioi2sconstuff(bufring_t *bufring1);
 void audioi2sconstuff2();
+void audioi2sconstuff3(bufring_t *bufring3);
 
 // todo this needs to come from a build config
 /** \brief Base configuration structure used when setting up
@@ -134,6 +135,9 @@ typedef struct audio_i2s_config {
  * \param config The configuration to apply.
  */
 const audio_format_t *audio_i2s_setup(const audio_format_t *intended_audio_format,
+                                               const audio_i2s_config_t *config);
+
+const audio_format_t *audio_i2s_in_setup(const audio_format_t *intended_audio_format,
                                                const audio_i2s_config_t *config);
 
 

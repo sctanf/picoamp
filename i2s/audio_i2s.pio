@@ -61,3 +61,41 @@ static inline void audio_i2s_program_init(PIO pio, uint sm, uint offset, uint da
 }
 
 %}
+
+.program audio_i2s_in
+.side_set 2
+
+                    ;        /--- LRCLK
+                    ;        |/-- BCLK
+bitloop1:           ;        ||
+    in pins, 1        side 0b10
+    jmp x-- bitloop1  side 0b11
+    in pins, 1        side 0b00
+public entry_point:
+    set x, 30         side 0b01
+
+bitloop0:
+    in pins, 1        side 0b00
+    jmp x-- bitloop0  side 0b01
+    in pins, 1        side 0b10
+    set x, 30         side 0b11
+
+% c-sdk {
+
+static inline void audio_i2s_in_program_init(PIO pio, uint sm, uint offset, uint data_pin, uint clock_pin_base) {
+    pio_sm_config sm_config = audio_i2s_in_program_get_default_config(offset);
+    
+    sm_config_set_in_pins(&sm_config, data_pin);
+    sm_config_set_sideset_pins(&sm_config, clock_pin_base);
+    sm_config_set_in_shift(&sm_config, false, true, 32);
+
+    pio_sm_init(pio, sm, offset, &sm_config);
+
+    uint pin_mask = (1u << data_pin) | (3u << clock_pin_base);
+    pio_sm_set_pindirs_with_mask(pio, sm, (3u << clock_pin_base), pin_mask);
+    pio_sm_set_pins(pio, sm, 0); // clear pins
+
+    pio_sm_exec(pio, sm, pio_encode_jmp(offset + audio_i2s_in_offset_entry_point));
+}
+
+%}
