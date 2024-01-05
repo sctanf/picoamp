@@ -8,8 +8,8 @@ created for a project to power Valve Index speakers with a Pico/RP2040 and I2S a
 
 if you do make this with individual modules, you might need to remove the passives that are on the amplifier module's output, the MAX98357 does not require these and at least for my modules they were destroying the audio quality!
 
-![pcb](../../blob/main/images/picoamp.webp)
-
-![pcb 3d](../../blob/main/images/picoamp2.webp)
+wiring diagram for breakout boards|3d view|smol pcb version
+--|--|--
+![wiring diagram for breakout boards](../../blob/main/images/picoamp.webp)|![3d view](../../blob/main/images/picoamp2.webp)|![smol pcb version](../../blob/main/images/picoamp3.webp)
 
 based off pico-playground usb_sound_card
