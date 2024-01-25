@@ -207,11 +207,6 @@ void __isr __time_critical_func(audio_i2s_dma_irq_handler)() {
         dma_irqn_acknowledge_channel(PICO_AUDIO_I2S_DMA_IRQ, dma_channel);
         audio_start_dma_transfer();
     }
-    dma_channel = shared_state2.dma_channel;
-    if (dma_irqn_get_channel_status(PICO_AUDIO_I2S_DMA_IRQ, dma_channel)) {
-        dma_irqn_acknowledge_channel(PICO_AUDIO_I2S_DMA_IRQ, dma_channel);
-        audio_in_start_dma_transfer();
-    }
 #endif
 }
 
