@@ -1,3 +1,17 @@
+# == DO NEVER EDIT THE NEXT LINES for Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+   set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(PICO_SDK_PATH ${USERHOME}/.pico-sdk/sdk/1.5.1)
+set(PICO_TOOLCHAIN_PATH ${USERHOME}/.pico-sdk/toolchain/13_2_Rel1)
+if(WIN32)
+    set(pico-sdk-tools_DIR ${USERHOME}/.pico-sdk/tools/1.5.1)
+    include(${pico-sdk-tools_DIR}/pico-sdk-tools-config.cmake)
+    include(${pico-sdk-tools_DIR}/pico-sdk-tools-config-version.cmake)
+endif()
+# ====================================================================================
 cmake_minimum_required(VERSION 3.12)
 
 # Pull in PICO SDK (must be before project)
@@ -17,8 +31,9 @@ add_subdirectory(i2s) # ???
 
 add_executable(pico_amp
         main.c
-        )
+)
 
+pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
 target_compile_definitions(pico_amp PRIVATE
         AUDIO_FREQ_MAX=48000
 
@@ -35,7 +50,13 @@ target_compile_definitions(pico_amp PRIVATE
 
         PICO_AUDIO_I2S_DATA_PIN=18
         PICO_AUDIO_I2S_CLOCK_PIN_BASE=16
+
+        #MG - 7/30/2024
+        #System clock set to 270MHz by main.c - SPI_CLKDIV is 2 by default -> 135MHz clk >> 133MHz flash memory spec
+        #Drop QSPI clock to 67.5MHz to avoid errors when loading program from flash
+        PICO_FLASH_SPI_CLKDIV=4 
 )
+pico_set_boot_stage2(pico_amp slower_boot2)
 
 target_link_libraries(pico_amp pico_stdlib usb_device pico_audio sctanf_i2s pico_multicore) # change the name so it doesnt try to use the original i2s stuffs
 pico_add_extra_outputs(pico_amp)

@@ -44,7 +44,8 @@ bufring_t bufring1 = {
 //#define EQ_HGC 0.203125,1.09375,-0.28125,-1.25,0.25,1.5,-0.5,-2.0 // [0.0, 0.0, -0.25, -0.5, -0.0625, -0.125, -0.015625, -0.03125]
 
 #if (USE_EQ == 1) // index v1.3
-#define POWER_LIMIT 3 // 2^3 > 8x > -18dB
+// Maximum Volume
+// #define POWER_LIMIT 3 // 2^3 > 8x > -18dB
 
 #define EQ_BASS 1.0147105601538713,-1.995692614841887,0.981052089435134,-1.995692614841887,0.9957626495890052 // PK Fc 64 Hz Gain 18 dB Q 0.7
 
@@ -145,7 +146,7 @@ uint cur_alt = 1;
 static char *descriptor_strings[] =
         {
                 "sctanf",
-                "Pico Amp"
+                "Pico Amp" 
         };
 
 // todo fix these
@@ -949,6 +950,11 @@ static void __not_in_flash_func(core1_worker)() {
 
 int main(void) {
     set_sys_clock_khz(270000, true); // so i can fit more filters
+
+    // MG - slowing down clock to 250MHz brings SPI CLK within flash spec at nominal SPI_CLKDIV of 2
+    // Loses some performance though :/
+    // set_sys_clock_khz(250000, true); 
+
 
 audioi2sconstuff(&bufring1);
 
