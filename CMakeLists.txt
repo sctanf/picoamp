@@ -37,10 +37,13 @@ target_compile_definitions(pico_amp PRIVATE
         PICO_AUDIO_I2S_DATA_PIN=18
         PICO_AUDIO_I2S_CLOCK_PIN_BASE=16
 
+        PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64
+)
+target_compile_definitions(slower_boot2 PRIVATE
         #MG - 7/30/2024
         #System clock set to 270MHz by main.c - SPI_CLKDIV is 2 by default -> 135MHz clk >> 133MHz flash memory spec
         #Drop QSPI clock to 67.5MHz to avoid errors when loading program from flash
-        PICO_FLASH_SPI_CLKDIV=4 
+        PICO_FLASH_SPI_CLKDIV=4
 )
 pico_set_boot_stage2(pico_amp slower_boot2)
 
