@@ -543,7 +543,7 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     uint64_t now_time = time_us_64();
 
     struct usb_buffer *usb_buffer = usb_current_out_packet_buffer(ep);
-    int32_t count;
+    int16_t count;
     int32_t vol_mul = audio_state.mute ? 0 : audio_state.vol_mul;
 
     switch (cur_alt)
