@@ -6,7 +6,7 @@ include(pico_sdk_import.cmake)
 # We also need PICO EXTRAS
 include(pico_extras_import.cmake)
 
-project(pico_amp C CXX)
+project(pico_amp C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
