@@ -153,9 +153,11 @@ static void update_pio_frequency(uint32_t sample_freq) {
 
 static inline void audio_start_dma_transfer() {
 while (bufring2->corelock == 1) {tight_loop_contents();}
-bufring2->corelock = 2;
+mutex_enter_blocking(&bufring2->corelock2);
+//bufring2->corelock = 2;
     if (bufring2->len < 2) {
-bufring2->corelock = 0;
+//bufring2->corelock = 0;
+mutex_exit(&bufring2->corelock2);
         // just play some silence
 /*
 irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, false);
@@ -178,14 +180,16 @@ pio_sm_set_enabled(audio_pio, shared_state.pio_sm, true);
     buflends[bufring2->index1+1] = bufring2->len;
     bufring2->len = bufring2->len - 2;
     bufring2->index1 = (bufring2->index1 + 2) % (1024-32);
-bufring2->corelock = 0;
+//bufring2->corelock = 0;
+mutex_exit(&bufring2->corelock2);
     return;
 }
 
 static inline void audio_in_start_dma_transfer() {
 //    while (bufring4.len > 1024-32-2) {tight_loop_contents();}
-while (bufring4->corelock == 2) {tight_loop_contents();}
-bufring4->corelock = 1;
+mutex_enter_blocking(&bufring4->corelock2);
+//while (bufring4->corelock == 2) {tight_loop_contents();}
+//bufring4->corelock = 1;
     dma_channel_config c = dma_get_channel_config(shared_state2.dma_channel);
     channel_config_set_write_increment(&c, true);
     dma_channel_set_config(shared_state2.dma_channel, &c, false);
@@ -193,7 +197,8 @@ bufring4->corelock = 1;
     buflends[bufring4->index1+1] = bufring4->len;
     bufring4->len = bufring4->len + 2;
     bufring4->index = (bufring4->index + 2) % (1024-32);
-bufring4->corelock = 0;
+//bufring4->corelock = 0;
+mutex_exit(&bufring4->corelock2);
     return;
 }
 

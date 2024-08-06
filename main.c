@@ -710,8 +710,9 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     }
 #endif
 //    while (bufring1.len > 1024-32-2-(count * 2)) {tight_loop_contents();}
-while (bufring1.corelock == 2) {tight_loop_contents();}
-bufring1.corelock = 1; // 20us
+mutex_enter_blocking(&bufring1.corelock2);
+//while (bufring1.corelock == 2) {tight_loop_contents();}
+//bufring1.corelock = 1; // 20us
     audioi2sconstuff2();
     int curin = bufring1.index;
     for (int i = 0; i < count * 2; i++) {
@@ -724,7 +725,8 @@ bufring1.corelock = 1; // 20us
     }
     bufring1.len = bufring1.len + count * 2;
     bufring1.index = (bufring1.index + count * 2) % (1024-32);
-bufring1.corelock = 0;
+//bufring1.corelock = 0;
+mutex_exit(&bufring1.corelock2);
     times[timei] = time_us_64() - now_time;
     timei++;
     timei %= 1024;
@@ -1022,7 +1024,7 @@ int main(void) {
     // Loses some performance though :/
     // set_sys_clock_khz(250000, true); 
 
-
+mutex_init(&bufring1.corelock2);
 audioi2sconstuff(&bufring1);
 
     // initialize for 48k

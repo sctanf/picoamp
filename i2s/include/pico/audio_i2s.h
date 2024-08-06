@@ -8,6 +8,7 @@
 #define _PICO_AUDIO_I2S_H
 
 #include "pico/audio.h"
+#include "pico/mutex.h"
 
 /** \file audio_i2s.h
  *  \defgroup pico_audio_i2s pico_audio_i2s
@@ -112,6 +113,7 @@ int len;
 int index;
 int index1;
 int corelock;
+mutex_t corelock2;
 } bufring_t;
 void audioi2sconstuff(bufring_t *bufring1);
 void audioi2sconstuff2();
