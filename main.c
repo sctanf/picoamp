@@ -1051,14 +1051,6 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
 	return button_state;
 }
 
-void arm_watchdog() {
-	watchdog_enable(500, 1);
-}
-
-void update_watchdog() {
-	watchdog_update();
-}
-
 int main(void) {
     set_sys_clock_khz(270000, true); // so i can fit more filters
 
@@ -1089,11 +1081,11 @@ audioi2sconstuff(&bufring1);
 
     multicore_launch_core1(core1_worker);
     // MSD is irq driven
-    arm_watchdog();
+    watchdog_enable(500, 1);
     while (1) {
-        __wfi();
+        __wfi(); // if there are no irq, watchdog will also time out (ex. usb stopped receiving data or something?)
         if (get_bootsel_button())
-            while(1);
-        update_watchdog();
+            while(1); // time out the watchdog
+        watchdog_update();
     }
 }
