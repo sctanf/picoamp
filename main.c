@@ -18,6 +18,7 @@
 // dsp audio buffers
 dspfx buf0[192];
 dspfx buf1[192];
+dspfx buf2[192];
 
 // equalizer filters
 biquad(eq_bq_0)
@@ -59,6 +60,7 @@ bufring_t bufring1 = {
 // #define POWER_LIMIT 3 // 2^3 > 8x > -18dB
 
 #define EQ_BASS 1.0147105601538713,-1.995692614841887,0.981052089435134,-1.995692614841887,0.9957626495890052 // PK Fc 64 Hz Gain 18 dB Q 0.7
+#define EQ_BASS_2 0.9929911199827585,-1.971319584276426,0.978906632080771,-1.971319584276426,0.9718977520635294 // PK Fc 185 Hz Gain -6 dB Q 1.2
 
 #define EQ_I_0 0.5044176749596154,-0.986643378943754,0.4827034776567025,-1.9688501073857256,0.9693278810582893
 #define EQ_I_1 1.057016619246638,-1.8917396238613828,0.84057263900955,-1.8917396238613828,0.897589258256188
@@ -70,6 +72,7 @@ bufring_t bufring1 = {
 // #define POWER_LIMIT 3 // 2^3 > 8x > -18dB
 
 #define EQ_BASS 1.0147105601538713,-1.995692614841887,0.981052089435134,-1.995692614841887,0.9957626495890052 // PK Fc 64 Hz Gain 18 dB Q 0.7
+#define EQ_BASS_2 0.9929911199827585,-1.971319584276426,0.978906632080771,-1.971319584276426,0.9718977520635294 // PK Fc 185 Hz Gain -6 dB Q 1.2
 
 #define EQ_I_0 0.5044176749596154,-0.986643378943754,0.4827034776567025,-1.9688501073857256,0.9693278810582893
 #define EQ_I_1 1.057016619246638,-1.8917396238613828,0.84057263900955,-1.8917396238613828,0.897589258256188
@@ -81,6 +84,7 @@ bufring_t bufring1 = {
 // #define POWER_LIMIT 3 // 2^3 > 8x > -18dB
 
 #define EQ_BASS 1.0147105601538713,-1.995692614841887,0.981052089435134,-1.995692614841887,0.9957626495890052 // PK Fc 64 Hz Gain 18 dB Q 0.7
+#define EQ_BASS_2 0.9929911199827585,-1.971319584276426,0.978906632080771,-1.971319584276426,0.9718977520635294 // PK Fc 185 Hz Gain -6 dB Q 1.2
 
 #define EQ_I_0 0.8778106868680571,-1.5325485016477938,0.7588870821163957,-1.5325485016477938,0.6366977689844527
 #define EQ_I_1 0.8277068964752905,-1.1247697606264675,0.620215472764755,-1.1247697606264675,0.4479223692400454
@@ -178,6 +182,10 @@ bufring_t bufring1 = {
 
 #ifndef EQ_I_17
 #define EQ_I_17 1.0,0.0,0.0,0.0,0.0
+#endif
+
+#ifdef EQ_BASS_2
+#undef EQ_I_16
 #endif
 
 int32_t actual_vol = 0;
@@ -691,13 +699,20 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     }
     
     process_biquad(&eq_bq_0, biquadconstsfx(EQ_BASS), count, buf0, buf1); // 87 us
+#ifdef EQ_BASS_2
+    process_biquad(&eq_bq_18, biquadconstsfx(EQ_BASS_2), count, buf1, buf2); // 87 us
+    #define BASS_BUF buf2
+#else
+    #define BASS_BUF buf1
+#endif
 
-    limit[limit_index] = fxabs(buf1[0]);
+    limit[limit_index] = fxabs(BASS_BUF[0]);
     if (limit[limit_index]>0) limit_index++;
     limit_index %= 192;
-    limit[limit_index] = fxabs(buf1[1]);
+    limit[limit_index] = fxabs(BASS_BUF[1]);
     if (limit[limit_index]>0) limit_index++;
     limit_index %= 192;
+
     dspfx max = 0;
     for (int i = 0; i < 192; i++) // 8 us
     {
@@ -712,10 +727,10 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
         if (targ - BASS_STEP_DOWN > actualtarg) targ -= BASS_STEP_DOWN;
         else if (targ < actualtarg - BASS_STEP) targ += BASS_STEP;
         else targ = actualtarg;
-        buf0[i] = (mulfx2(buf0[i], (1<<30) - targ) + mulfx2(buf1[i], targ)) << 3;
+        buf0[i] = (mulfx2(buf0[i], (1<<30) - targ) + mulfx2(BASS_BUF[i], targ)) << 3;
         if (buf0[i] > (1<<30) - 1) buf0[i] = (1<<30) - 1;
         if (buf0[i] < (-1<<30)) buf0[i] = (-1<<30);
-        buf0[i+1] = (mulfx2(buf0[i+1], (1<<30) - targ) + mulfx2(buf1[i+1], targ)) << 3;
+        buf0[i+1] = (mulfx2(buf0[i+1], (1<<30) - targ) + mulfx2(BASS_BUF[i+1], targ)) << 3;
         if (buf0[i+1] > (1<<30) - 1) buf0[i+1] = (1<<30) - 1;
         if (buf0[i+1] < (-1<<30)) buf0[i+1] = (-1<<30);
     }
