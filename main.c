@@ -29,7 +29,6 @@ biquad(eq_bq_5)
 biquad(eq_bq_6)
 biquad(eq_bq_7)
 biquad(eq_bq_8)
-/*
 biquad(eq_bq_9)
 biquad(eq_bq_10)
 biquad(eq_bq_11)
@@ -40,8 +39,7 @@ biquad(eq_bq_15)
 biquad(eq_bq_16)
 biquad(eq_bq_17)
 biquad(eq_bq_18)
-*/
-// now can run twice as many filters.. they are not used for now
+// now can run twice as many filters..
 
 bufring_t bufring1 = {
 .len = 0,
@@ -139,71 +137,37 @@ bufring_t bufring1 = {
 #define EQ_I_1 1.0,0.0,0.0,0.0,0.0
 #endif
 
-#ifndef EQ_I_2
-#define EQ_I_2 1.0,0.0,0.0,0.0,0.0
-#endif
-
 #ifndef EQ_I_3
 #define EQ_I_3 1.0,0.0,0.0,0.0,0.0
-#endif
-
-#ifndef EQ_I_4
-#define EQ_I_4 1.0,0.0,0.0,0.0,0.0
 #endif
 
 #ifndef EQ_I_5
 #define EQ_I_5 1.0,0.0,0.0,0.0,0.0
 #endif
 
-#ifndef EQ_I_6
-#define EQ_I_6 1.0,0.0,0.0,0.0,0.0
-#endif
-
 #ifndef EQ_I_7
 #define EQ_I_7 1.0,0.0,0.0,0.0,0.0
-#endif
-
-/*
-#ifndef EQ_I_8
-#define EQ_I_8 1.0,0.0,0.0,0.0,0.0
 #endif
 
 #ifndef EQ_I_9
 #define EQ_I_9 1.0,0.0,0.0,0.0,0.0
 #endif
 
-#ifndef EQ_I_10
-#define EQ_I_10 1.0,0.0,0.0,0.0,0.0
-#endif
-
 #ifndef EQ_I_11
 #define EQ_I_11 1.0,0.0,0.0,0.0,0.0
-#endif
-
-#ifndef EQ_I_12
-#define EQ_I_12 1.0,0.0,0.0,0.0,0.0
 #endif
 
 #ifndef EQ_I_13
 #define EQ_I_13 1.0,0.0,0.0,0.0,0.0
 #endif
 
-#ifndef EQ_I_14
-#define EQ_I_14 1.0,0.0,0.0,0.0,0.0
-#endif
-
 #ifndef EQ_I_15
 #define EQ_I_15 1.0,0.0,0.0,0.0,0.0
-#endif
-
-#ifndef EQ_I_16
-#define EQ_I_16 1.0,0.0,0.0,0.0,0.0
 #endif
 
 #ifndef EQ_I_17
 #define EQ_I_17 1.0,0.0,0.0,0.0,0.0
 #endif
-*/
 
 int32_t actual_vol = 0;
 #define VOL_STEP 600000
@@ -663,26 +627,40 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     usb_packet_done(ep);
     // 8 us elapsed
 #ifdef EQ_ENABLE // 521 us + 87 us
-    process_biquad(&eq_bq_1, biquadconstsfx(EQ_I_0), count, buf0, buf1); // 87 us each
+    process_biquad(&eq_bq_1, biquadconstsfx(EQ_I_0), count, buf0, buf1); // 87 us each (?)
     process_biquad(&eq_bq_2, biquadconstsfx(EQ_I_1), count, buf1, buf0);
+#ifdef EQ_I_2
     process_biquad(&eq_bq_3, biquadconstsfx(EQ_I_2), count, buf0, buf1);
     process_biquad(&eq_bq_4, biquadconstsfx(EQ_I_3), count, buf1, buf0);
+#endif
+#ifdef EQ_I_4
     process_biquad(&eq_bq_5, biquadconstsfx(EQ_I_4), count, buf0, buf1);
     process_biquad(&eq_bq_6, biquadconstsfx(EQ_I_5), count, buf1, buf0);
+#endif
+#ifdef EQ_I_6
     process_biquad(&eq_bq_7, biquadconstsfx(EQ_I_6), count, buf0, buf1);
     process_biquad(&eq_bq_8, biquadconstsfx(EQ_I_7), count, buf1, buf0);
-/*
+#endif
+#ifdef EQ_I_8
     process_biquad(&eq_bq_9, biquadconstsfx(EQ_I_8), count, buf0, buf1);
     process_biquad(&eq_bq_10, biquadconstsfx(EQ_I_9), count, buf1, buf0);
+#endif
+#ifdef EQ_I_10
     process_biquad(&eq_bq_11, biquadconstsfx(EQ_I_10), count, buf0, buf1);
     process_biquad(&eq_bq_12, biquadconstsfx(EQ_I_11), count, buf1, buf0);
+#endif
+#ifdef EQ_I_12
     process_biquad(&eq_bq_13, biquadconstsfx(EQ_I_12), count, buf0, buf1);
     process_biquad(&eq_bq_14, biquadconstsfx(EQ_I_13), count, buf1, buf0);
+#endif
+#ifdef EQ_I_14
     process_biquad(&eq_bq_15, biquadconstsfx(EQ_I_14), count, buf0, buf1);
     process_biquad(&eq_bq_16, biquadconstsfx(EQ_I_15), count, buf1, buf0);
+#endif
+#ifdef EQ_I_16
     process_biquad(&eq_bq_17, biquadconstsfx(EQ_I_16), count, buf0, buf1);
     process_biquad(&eq_bq_18, biquadconstsfx(EQ_I_17), count, buf1, buf0);
-*/
+#endif
 #endif
     for (int i = 0; i < count * 2; i += 2) { // 25 us
         if (actual_vol - VOL_STEP > vol_mul) actual_vol -= VOL_STEP;

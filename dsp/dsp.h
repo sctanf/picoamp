@@ -95,6 +95,10 @@ static inline void process_fwi(fwi *const filter, int16_t iters, int32_t *in, in
 }
 
 static inline void process_biquad(biquad *const filter, int64_t a0, int64_t a1, int64_t a2, int64_t b1, int64_t b2, int16_t iters, int32_t *in, int32_t *out) {
+//	if (a0 == 1 && a1 == 0 && a2 == 0 && b1 == 0 && b2 == 0) {
+//		memcpy(out, in, sizeof(int32_t) * iters * 2);
+//		return; // no processing to do
+//	}
 	int16_t iters2 = iters * 2;
 	out[0] = mulshift(mulfx0(a0, in[0]) + mulfx0(a1, filter->a1z) - mulfx0(b1, filter->b1z) + mulfx0(a2, filter->a2z) - mulfx0(b2, filter->b2z));
 	out[2] = mulshift(mulfx0(a0, in[2]) + mulfx0(a1, in[0]) - mulfx0(b1, out[0]) + mulfx0(a2, filter->a1z) - mulfx0(b2, filter->b1z));
