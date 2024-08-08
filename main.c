@@ -1051,6 +1051,12 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
 	return button_state;
 }
 
+int64_t arm_watchdog(alarm_id_t id, void *user_data) {
+    watchdog_enable(500, 1);
+
+    return 0;
+}
+
 int main(void) {
     set_sys_clock_khz(270000, true); // so i can fit more filters
 
@@ -1081,7 +1087,7 @@ audioi2sconstuff(&bufring1);
 
     multicore_launch_core1(core1_worker);
     // MSD is irq driven
-    watchdog_enable(500, 1);
+    add_alarm_in_ms(4500, arm_watchdog, NULL, 1); // 5 seconds of grace
     while (1) {
         __wfi(); // if there are no irq, watchdog will also time out (ex. usb stopped receiving data or something?)
         if (get_bootsel_button())
