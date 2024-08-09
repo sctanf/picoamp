@@ -48,6 +48,8 @@ bufring_t bufring1 = {
 .index1 = 0,
 };
 
+//#define PASSTHRU_ENABLE
+
 #define EQ_ENABLE
 #define BASS_ENABLE
 
@@ -82,6 +84,7 @@ bufring_t bufring1 = {
 #elif (USE_EQ == 0) // index v5.31 psy
 // Maximum Volume
 // #define POWER_LIMIT 3 // 2^3 > 8x > -18dB
+#define POWER_LIMIT 0 // Use LIMIT_MUL as limiter
 
 #define EQ_BASS 1.0147105601538713,-1.995692614841887,0.981052089435134,-1.995692614841887,0.9957626495890052 // PK Fc 64 Hz Gain 18 dB Q 0.7
 #define EQ_BASS_2 0.9929911199827585,-1.971319584276426,0.978906632080771,-1.971319584276426,0.9718977520635294 // PK Fc 185 Hz Gain -6 dB Q 1.2
@@ -188,8 +191,17 @@ bufring_t bufring1 = {
 #undef EQ_I_16
 #endif
 
+#ifdef PASSTHRU_ENABLE
+#ifdef EQ_ENABLE
+#undef EQ_ENABLE
+#endif
+#ifdef BASS_ENABLE
+#undef BASS_ENABLE
+#endif
+#endif
+
 int32_t actual_vol = 0;
-#define VOL_STEP 600000
+#define VOL_STEP 300000
 
 dspfx limit[192]; // sample store
 int limit_index = 0;
@@ -197,8 +209,10 @@ int32_t limit_vol = 0;
 //#define LIMIT_MUL ((dspfx)(0.04*(double)(1<<30))) // 0.04x > -28dB limit relative to input (-28+18 > Stops limiting at -10dB)
 //#define BASS_MUL floatfx(1./8.) // Bass peak filter is 18dB > 8x
 int64_t targ = 0;
-#define BASS_STEP 600000
-#define BASS_STEP_DOWN 1200000
+#define BASS_STEP 10000
+#define BASS_STEP_DOWN 600000
+#define BASS_STEP_THRESHOLD ((dspfx)(0.05*(double)(1<<30))) // 1% (i dunno)
+#define BASS_STEP_DELAY_US 500*1000
 
 uint cur_alt = 1;
 
@@ -597,6 +611,7 @@ static struct {
         .freq = 48000,
 };
 
+uint64_t bass_step_time = 0;
 uint64_t times[1024];
 int timei = 0;
 static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // total 733 us + 87 us
@@ -641,10 +656,12 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
         count = 0;
         break;
     }
-    
+
     usb_grow_transfer(ep->current_transfer, 1);
     usb_packet_done(ep);
     // 8 us elapsed
+
+    // main filters
 #ifdef EQ_ENABLE // 521 us + 87 us
     process_biquad(&eq_bq_1, biquadconstsfx(EQ_I_0), count, buf0, buf1); // 87 us each (?)
     process_biquad(&eq_bq_2, biquadconstsfx(EQ_I_1), count, buf1, buf0);
@@ -681,23 +698,32 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     process_biquad(&eq_bq_18, biquadconstsfx(EQ_I_17), count, buf1, buf0);
 #endif
 #endif
-    for (int i = 0; i < count * 2; i += 2) { // 25 us
-        if (actual_vol - VOL_STEP > vol_mul) actual_vol -= VOL_STEP;
-        else if (actual_vol < vol_mul - VOL_STEP) actual_vol += VOL_STEP;
-        else actual_vol = vol_mul;
-        buf0[i] = mulfx2(buf0[i], actual_vol);
-        buf0[i+1] = mulfx2(buf0[i+1], actual_vol);
+
+    // volume
+    dspfx volume_mul[256] = {0};
+    for (int i = 0; i < count; i++) { // 25 us
+        if (actual_vol - VOL_STEP > vol_mul)
+            actual_vol -= VOL_STEP;
+        else if (actual_vol < vol_mul - VOL_STEP)
+            actual_vol += VOL_STEP;
+        else
+            actual_vol = vol_mul;
+        volume_mul[i] = actual_vol;
+        buf0[i*2] = mulfx2(buf0[i*2], actual_vol);
+        buf0[i*2+1] = mulfx2(buf0[i*2+1], actual_vol);
     }
+
+    // amp
 #ifdef POWER_LIMIT
-    for (int i = 0; i < count * 2; i++) { // 5 us
+    for (int i = 0; i < count * 2; i++) // 5 us
         buf0[i] = buf0[i] >> POWER_LIMIT;
-    }
 #endif
+
+    // bass filters
 #ifdef BASS_ENABLE
-    for (int i = 0; i < count * 2; i++) { // 5 us
+    for (int i = 0; i < count * 2; i++) // 5 us
         buf0[i] = buf0[i] >> 3; // divide by 8, headroom for bass eq
-    }
-    
+
     process_biquad(&eq_bq_0, biquadconstsfx(EQ_BASS), count, buf0, buf1); // 87 us
 #ifdef EQ_BASS_2
     process_biquad(&eq_bq_18, biquadconstsfx(EQ_BASS_2), count, buf1, buf2); // 87 us
@@ -707,34 +733,62 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
 #endif
 
     limit[limit_index] = fxabs(BASS_BUF[0]);
-    if (limit[limit_index]>0) limit_index++;
+    if (limit[limit_index]>0) 
+        limit_index++;
     limit_index %= 192;
     limit[limit_index] = fxabs(BASS_BUF[1]);
-    if (limit[limit_index]>0) limit_index++;
+    if (limit[limit_index]>0)
+        limit_index++;
     limit_index %= 192;
 
     dspfx max = 0;
     for (int i = 0; i < 192; i++) // 8 us
-    {
-        if (limit[i]>max) max = limit[i];
-    }
-//    if (max < 15000) return;
-    if (max < LIMIT_MUL) max = LIMIT_MUL;
+        if (limit[i] > max) max = limit[i];
+
+    if (max < LIMIT_MUL)
+        max = LIMIT_MUL;
     int64_t actualtarg = (int64_t)(LIMIT_MUL - mulfx(max, BASS_MUL)) * (int64_t)(1<<30) / (int64_t)(max - mulfx(max, BASS_MUL)); // target mix to limit bass
-    if (actualtarg < 0) actualtarg = 0; // if the mix goes negative, ignore it
-    
-    for (int i = 0; i < count * 2; i += 2) { // 61 us
-        if (targ - BASS_STEP_DOWN > actualtarg) targ -= BASS_STEP_DOWN;
-        else if (targ < actualtarg - BASS_STEP) targ += BASS_STEP;
-        else targ = actualtarg;
+    if (actualtarg < 0) // if the mix goes negative, ignore it
+        actualtarg = 0;
+
+    for (int i = 0; i < count * 2; i += 2) { // 61 us (??)
+        if (targ > actualtarg - BASS_STEP_THRESHOLD)
+            bass_step_time = now_time + BASS_STEP_DELAY_US;
+        if (targ > actualtarg || now_time > bass_step_time) {
+            if (targ - BASS_STEP_DOWN > actualtarg)
+                targ -= BASS_STEP_DOWN;
+            else if (targ < actualtarg - BASS_STEP)
+                targ += BASS_STEP;
+            else
+                targ = actualtarg;
+        }
         buf0[i] = (mulfx2(buf0[i], (1<<30) - targ) + mulfx2(BASS_BUF[i], targ)) << 3;
-        if (buf0[i] > (1<<30) - 1) buf0[i] = (1<<30) - 1;
-        if (buf0[i] < (-1<<30)) buf0[i] = (-1<<30);
         buf0[i+1] = (mulfx2(buf0[i+1], (1<<30) - targ) + mulfx2(BASS_BUF[i+1], targ)) << 3;
-        if (buf0[i+1] > (1<<30) - 1) buf0[i+1] = (1<<30) - 1;
-        if (buf0[i+1] < (-1<<30)) buf0[i+1] = (-1<<30);
     }
 #endif
+
+    // limiter
+#ifndef PASSTHRU_ENABLE
+#ifdef POWER_LIMIT
+// it seems like the bass filters are putting the signal level above a bit? i do not know by how much, this seemed ok.
+#define LIMIT_MAX ((LIMIT_MUL << 3) + ((dspfx)(0.05*(double)(1<<30))))
+#else
+#define LIMIT_MAX ((1 << 30) - 1)
+#endif
+    dspfx limit_max = ((1 << 30) - 1);
+    dspfx limit_min;
+    for (int i = 0; i < count; i++) { // 61 us (??)
+        if (LIMIT_MAX > 0) {
+            limit_max = volume_mul[i] > LIMIT_MAX ? volume_mul[i] : LIMIT_MAX;
+        }
+        limit_min = -LIMIT_MAX - 1;
+        if (buf0[i*2] > limit_max)
+            buf0[i*2] = limit_max;
+        if (buf0[i*2+1] < limit_min)
+            buf0[i*2+1] = limit_min;
+    }
+#endif
+
 //    while (bufring1.len > 1024-32-2-(count * 2)) {tight_loop_contents();}
 mutex_enter_blocking(&bufring1.corelock2);
 //while (bufring1.corelock == 2) {tight_loop_contents();}
