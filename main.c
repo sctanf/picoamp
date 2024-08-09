@@ -621,15 +621,19 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     int16_t count;
     int32_t vol_mul = audio_state.mute ? 0 : audio_state.vol_mul;
 
+#ifdef PASSTHRU_ENABLE
+#define HEADROOM 0
+#else
+#define HEADROOM 1
+#endif
     switch (cur_alt)
     {
     case 1: // 32bit
         count = (usb_buffer->data_len + 256) / 8; // the packet size is overflowing!!!
         {
             int32_t *in = (int32_t *) usb_buffer->data;
-            for (int i = 0; i < count * 2; i++) {
-                buf0[i] = in[i] >> 1; // divide by 2, allow some headroom in case the filters need it
-            }
+            for (int i = 0; i < count * 2; i++)
+                buf0[i] = in[i] >> HEADROOM; // divide by 2, allow some headroom in case the filters need it
         }
         break;
     case 2: // 24bit
@@ -638,8 +642,8 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
             uint8_t *in = (uint8_t *) usb_buffer->data;
             for (int i = 0; i < count * 2; i += 2) {
                 int j = i * 3;
-                buf0[i] = (in[j] | in[j+1] << 8 | (int8_t)in[j+2] << 16) << 7; // divide by 2, allow some headroom in case the filters need it
-                buf0[i+1] = (in[j+3] | in[j+4] << 8 | (int8_t)in[j+5] << 16) << 7; // divide by 2, allow some headroom in case the filters need it
+                buf0[i] = (in[j] << 8 | in[j+1] << 16 | (int8_t)in[j+2] << 24) >> HEADROOM; // divide by 2, allow some headroom in case the filters need it
+                buf0[i+1] = (in[j+3] << 8 | in[j+4] << 16 | (int8_t)in[j+5] << 24) >> HEADROOM; // divide by 2, allow some headroom in case the filters need it
             }
         }
         break;
@@ -647,9 +651,8 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
         count = usb_buffer->data_len / 4;
         {
             int16_t *in = (int16_t *) usb_buffer->data;
-            for (int i = 0; i < count * 2; i++) {
-                buf0[i] = in[i] << 15; // divide by 2, allow some headroom in case the filters need it
-            }
+            for (int i = 0; i < count * 2; i++)
+                buf0[i] = (in[i] << 16) >> HEADROOM; // divide by 2, allow some headroom in case the filters need it
         }
         break;
     default: // No alternate mode enumerated :(
@@ -796,7 +799,7 @@ mutex_enter_blocking(&bufring1.corelock2);
     audioi2sconstuff2();
     int curin = bufring1.index;
     for (int i = 0; i < count * 2; i++) {
-        bufring1.buf[curin] = buf0[i]<<1;
+        bufring1.buf[curin] = buf0[i] << HEADROOM;
         if (curin < 32) {
             bufring1.buf[curin+1024-32] = bufring1.buf[curin];
         }
