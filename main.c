@@ -15,6 +15,8 @@
 
 #include "dsp/dsp.h"
 
+#include "hardware/vreg.h"
+
 // dsp audio buffers
 dspfx buf0[192];
 dspfx buf1[192];
@@ -1144,14 +1146,21 @@ int64_t arm_watchdog(alarm_id_t id, void *user_data) {
 }
 
 int main(void) {
-    set_sys_clock_khz(270000, true); // so i can fit more filters
+//    vreg_set_voltage(VREG_VOLTAGE_1_10);
+//    sleep_ms(1000);
+    int32_t cpu_freq = 270000;
+    set_sys_clock_khz(cpu_freq, true); // so i can fit more filters
+    // 270000 -> 19 filters
+    // 300000 -> 21 filters
+    // 320000 -> 22 filters
+    // 440000 -> 33 filters
 
     // MG - slowing down clock to 250MHz brings SPI CLK within flash spec at nominal SPI_CLKDIV of 2
     // Loses some performance though :/
     // set_sys_clock_khz(250000, true); 
 
 mutex_init(&bufring1.corelock2);
-audioi2sconstuff(&bufring1);
+audioi2sconstuff(&bufring1, cpu_freq * 1000);
 
     // initialize for 48k
     struct audio_format audio_format_48k = {
