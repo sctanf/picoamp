@@ -1185,6 +1185,8 @@ audioi2sconstuff(&bufring1, CPU_FREQ);
     add_alarm_in_ms(4500, arm_watchdog, NULL, 1); // 5 seconds of grace
     while (1) {
         __wfi(); // if there are no irq, watchdog will also time out (ex. usb stopped receiving data or something?)
+        // TODO: this is causing issues if the device is connected but no audio streaming to it, which is nice in some instances but very bad in others
+        // maybe find another way
         if (get_bootsel_button())
             while(1); // time out the watchdog
         watchdog_update();
