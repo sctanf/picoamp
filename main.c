@@ -24,6 +24,7 @@ dspfx buf2[192];
 
 // equalizer filters
 biquad(eq_bq_0)
+biquad(eq_bq_00) // whup
 biquad(eq_bq_1)
 biquad(eq_bq_2)
 biquad(eq_bq_3)
@@ -58,6 +59,14 @@ bufring_t bufring1 = {
 #define USE_EQ 0
 
 //#define EQ_HGC 0.203125,1.09375,-0.28125,-1.25,0.25,1.5,-0.5,-2.0 // [0.0, 0.0, -0.25, -0.5, -0.0625, -0.125, -0.015625, -0.03125]
+
+#define CPU_FREQ 150000000
+// CPU_FREQ affects how many filters can run
+// 150000 -> 9 filters (suitable for the provided presets)
+// 270000 -> 19 filters
+// 300000 -> 21 filters
+// 320000 -> 22 filters (might need higher core voltage)
+// 440000 -> 33 filters (will need higher core voltage)
 
 #if (USE_EQ == -2) // index source (v3.2)
 // Maximum Volume
@@ -190,10 +199,6 @@ bufring_t bufring1 = {
 
 #ifndef EQ_I_17
 #define EQ_I_17 1.0,0.0,0.0,0.0,0.0
-#endif
-
-#ifdef EQ_BASS_2
-#undef EQ_I_16
 #endif
 
 #ifdef PASSTHRU_ENABLE
@@ -734,7 +739,7 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
 
     process_biquad(&eq_bq_0, biquadconstsfx(EQ_BASS), count, buf0, buf1); // 87 us
 #ifdef EQ_BASS_2
-    process_biquad(&eq_bq_18, biquadconstsfx(EQ_BASS_2), count, buf1, buf2); // 87 us
+    process_biquad(&eq_bq_00, biquadconstsfx(EQ_BASS_2), count, buf1, buf2); // 87 us
     #define BASS_BUF buf2
 #else
     #define BASS_BUF buf1
@@ -1148,19 +1153,14 @@ int64_t arm_watchdog(alarm_id_t id, void *user_data) {
 int main(void) {
 //    vreg_set_voltage(VREG_VOLTAGE_1_10);
 //    sleep_ms(1000);
-    int32_t cpu_freq = 270000;
-    set_sys_clock_khz(cpu_freq, true); // so i can fit more filters
-    // 270000 -> 19 filters
-    // 300000 -> 21 filters
-    // 320000 -> 22 filters
-    // 440000 -> 33 filters
+    set_sys_clock_khz(CPU_FREQ / 1000, true); // so i can fit more filters
 
     // MG - slowing down clock to 250MHz brings SPI CLK within flash spec at nominal SPI_CLKDIV of 2
     // Loses some performance though :/
     // set_sys_clock_khz(250000, true); 
 
 mutex_init(&bufring1.corelock2);
-audioi2sconstuff(&bufring1, cpu_freq * 1000);
+audioi2sconstuff(&bufring1, CPU_FREQ);
 
     // initialize for 48k
     struct audio_format audio_format_48k = {
