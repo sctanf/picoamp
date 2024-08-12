@@ -62,11 +62,11 @@ bufring_t bufring1 = {
 
 #define CPU_FREQ 150000000
 // CPU_FREQ affects how many filters can run
-// 150000 -> 9 filters (suitable for the provided presets)
-// 270000 -> 19 filters
-// 300000 -> 21 filters
-// 320000 -> 22 filters (might need higher core voltage)
-// 440000 -> 33 filters (will need higher core voltage)
+// 150000000 -> 9 filters (suitable for the provided presets)
+// 270000000 -> 19 filters
+// 300000000 -> 21 filters
+// 320000000 -> 22 filters (might need higher core voltage)
+// 440000000 -> 33 filters (will need higher core voltage)
 
 #if (USE_EQ == -2) // index source (v3.2)
 // Maximum Volume
