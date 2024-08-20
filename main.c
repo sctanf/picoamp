@@ -1144,10 +1144,8 @@ bool __no_inline_not_in_flash_func(get_bootsel_button)() {
 	return button_state;
 }
 
-int64_t arm_watchdog(alarm_id_t id, void *user_data) {
-    watchdog_enable(500, 1);
-
-    return 0;
+bool timer_interrupt(__unused struct repeating_timer *t) {
+    return true;
 }
 
 int main(void) {
@@ -1182,7 +1180,9 @@ audioi2sconstuff(&bufring1, CPU_FREQ);
 
     multicore_launch_core1(core1_worker);
     // MSD is irq driven
-    add_alarm_in_ms(4500, arm_watchdog, NULL, 1); // 5 seconds of grace
+    watchdog_enable(250, 1); // enable watchdog now
+    struct repeating_timer timer;
+    add_repeating_timer_ms(100, timer_interrupt, NULL, &timer);
     while (1) {
         __wfi(); // if there are no irq, watchdog will also time out (ex. usb stopped receiving data or something?)
         // TODO: this is causing issues if the device is connected but no audio streaming to it, which is nice in some instances but very bad in others
