@@ -68,8 +68,7 @@ bufring4=bufring3;
 
 static void __isr __time_critical_func(audio_i2s_dma_irq_handler)();
 
-const audio_format_t *audio_i2s_setup(const audio_format_t *intended_audio_format,
-                                               const audio_i2s_config_t *config) {
+const audio_format_t *audio_i2s_setup(const audio_i2s_config_t *config) {
     uint func = GPIO_FUNC_PIOx;
     gpio_set_function(config->data_pin, func);
     gpio_set_function(config->clock_pin_base, func);
@@ -104,11 +103,9 @@ const audio_format_t *audio_i2s_setup(const audio_format_t *intended_audio_forma
 
     irq_add_shared_handler(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, audio_i2s_dma_irq_handler, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
     dma_irqn_set_channel_enabled(PICO_AUDIO_I2S_DMA_IRQ, dma_channel, 1);
-    return intended_audio_format;
 }
 
-const audio_format_t *audio_i2s_in_setup(const audio_format_t *intended_audio_format,
-                                               const audio_i2s_config_t *config) {
+const audio_format_t *audio_i2s_in_setup(const audio_i2s_config_t *config) {
     uint func = GPIO_FUNC_PIOx;
     gpio_set_function(config->data_pin, func);
     gpio_set_function(config->clock_pin_base, func);
@@ -140,8 +137,6 @@ const audio_format_t *audio_i2s_in_setup(const audio_format_t *intended_audio_fo
                           0, // count
                           false // trigger
     );
-
-    return intended_audio_format;
 }
 
 static void update_pio_frequency(uint32_t sample_freq) {

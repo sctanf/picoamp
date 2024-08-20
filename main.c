@@ -1160,13 +1160,6 @@ int main(void) {
 mutex_init(&bufring1.corelock2);
 audioi2sconstuff(&bufring1, CPU_FREQ);
 
-    // initialize for 48k
-    struct audio_format audio_format_48k = {
-            .format = AUDIO_BUFFER_FORMAT_PCM_S16,
-            .sample_freq = 48000,
-            .channel_count = 2,
-    };
-
     struct audio_i2s_config config = {
             .data_pin = PICO_AUDIO_I2S_DATA_PIN,
             .clock_pin_base = PICO_AUDIO_I2S_CLOCK_PIN_BASE,
@@ -1174,7 +1167,7 @@ audioi2sconstuff(&bufring1, CPU_FREQ);
             .pio_sm = 0,
     };
 
-    audio_i2s_setup(&audio_format_48k, &config);
+    audio_i2s_setup(&config);
 
     usb_sound_card_init();
 
