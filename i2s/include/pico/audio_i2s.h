@@ -136,11 +136,9 @@ typedef struct audio_i2s_config {
  * \param intended_audio_format \todo
  * \param config The configuration to apply.
  */
-const audio_format_t *audio_i2s_setup(const audio_format_t *intended_audio_format,
-                                               const audio_i2s_config_t *config);
+const audio_format_t *audio_i2s_setup(const audio_i2s_config_t *config);
 
-const audio_format_t *audio_i2s_in_setup(const audio_format_t *intended_audio_format,
-                                               const audio_i2s_config_t *config);
+const audio_format_t *audio_i2s_in_setup(const audio_i2s_config_t *config);
 
 
 /** \brief Set up system to output I2S audio
