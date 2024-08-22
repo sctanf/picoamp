@@ -1185,11 +1185,11 @@ audioi2sconstuff(&bufring1, CPU_FREQ);
     while (1) {
         add_repeating_timer_ms(400, timer_interrupt, NULL, &timer);
         __wfi(); // if there are no irq, watchdog will also time out (ex. usb stopped receiving data or something?)
+        watchdog_update();
         cancel_repeating_timer(&timer); // reset timer if something already interrupted in time
         // TODO: this is causing issues if the device is connected but no audio streaming to it, which is nice in some instances but very bad in others
         // maybe find another way
         if (get_bootsel_button())
             while(1); // time out the watchdog
-        watchdog_update();
     }
 }
