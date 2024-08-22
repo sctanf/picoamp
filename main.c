@@ -1173,10 +1173,10 @@ audioi2sconstuff(&bufring1, CPU_FREQ);
 
     multicore_launch_core1(core1_worker);
     // MSD is irq driven
-    watchdog_enable(250, 1); // enable watchdog now
+    watchdog_enable(500, 1); // enable watchdog now
     struct repeating_timer timer;
     while (1) {
-        add_repeating_timer_ms(245, timer_interrupt, NULL, &timer);
+        add_repeating_timer_ms(400, timer_interrupt, NULL, &timer);
         __wfi(); // if there are no irq, watchdog will also time out (ex. usb stopped receiving data or something?)
         cancel_repeating_timer(&timer); // reset timer if something already interrupted in time
         // TODO: this is causing issues if the device is connected but no audio streaming to it, which is nice in some instances but very bad in others
