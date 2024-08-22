@@ -802,6 +802,8 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     }
 #endif
 
+    for (int i = 0; i < count * 2; i++)
+        buf0[i] = buf0[i] << HEADROOM;
 //    while (bufring1.len > 1024-32-2-(count * 2)) {tight_loop_contents();}
 mutex_enter_blocking(&bufring1.corelock2);
 //while (bufring1.corelock == 2) {tight_loop_contents();}
@@ -809,10 +811,9 @@ mutex_enter_blocking(&bufring1.corelock2);
     audioi2sconstuff2();
     int curin = bufring1.index;
     for (int i = 0; i < count * 2; i++) {
-        bufring1.buf[curin] = buf0[i] << HEADROOM;
-        if (curin < 32) {
+        bufring1.buf[curin] = buf0[i];
+        if (curin < 32)
             bufring1.buf[curin+1024-32] = bufring1.buf[curin];
-        }
         curin++;
         curin %= 1024-32;
     }

@@ -53,10 +53,10 @@ bufring2=bufring1;
 cpu_freq = freq;
 }
 
-uint32_t buflends[8192];
 void audioi2sconstuff2() {
     uint32_t divider = (cpu_freq * 2 / 48000) - ((bufring2->len - 16)/2);
     buflends[bufring2->index1] = divider;
+//    buflends[bufring2->index1] = divider;
     pio_sm_set_clkdiv_int_frac(audio_pio, shared_state.pio_sm, divider >> 8u, divider & 0xffu);
 }
 
@@ -149,7 +149,10 @@ static void update_pio_frequency(uint32_t sample_freq) {
 }
 
 static inline void audio_start_dma_transfer() {
-while (bufring2->corelock == 1) {tight_loop_contents();}
+    dma_channel_config c = dma_get_channel_config(shared_state.dma_channel);
+    channel_config_set_read_increment(&c, true);
+    dma_channel_set_config(shared_state.dma_channel, &c, false);
+//while (bufring2->corelock == 1) {tight_loop_contents();}
 mutex_enter_blocking(&bufring2->corelock2);
 //bufring2->corelock = 2;
     if (bufring2->len < 2) {
@@ -164,17 +167,13 @@ irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, true);
 pio_sm_set_enabled(audio_pio, shared_state.pio_sm, true);
 */
         static uint32_t zero;
-        dma_channel_config c = dma_get_channel_config(shared_state.dma_channel);
         channel_config_set_read_increment(&c, false);
         dma_channel_set_config(shared_state.dma_channel, &c, false);
         dma_channel_transfer_from_buffer_now(shared_state.dma_channel, &zero, 2);
         return;
     }
-    dma_channel_config c = dma_get_channel_config(shared_state.dma_channel);
-    channel_config_set_read_increment(&c, true);
-    dma_channel_set_config(shared_state.dma_channel, &c, false);
     dma_channel_transfer_from_buffer_now(shared_state.dma_channel, bufring2->buf+bufring2->index1, 2);
-    buflends[bufring2->index1+1] = bufring2->len;
+//    buflends[bufring2->index1+1] = bufring2->len;
     bufring2->len = bufring2->len - 2;
     bufring2->index1 = (bufring2->index1 + 2) % (1024-32);
 //bufring2->corelock = 0;
@@ -191,7 +190,7 @@ mutex_enter_blocking(&bufring4->corelock2);
     channel_config_set_write_increment(&c, true);
     dma_channel_set_config(shared_state2.dma_channel, &c, false);
     dma_channel_transfer_to_buffer_now(shared_state2.dma_channel, bufring4->buf+bufring4->index1, 2);
-    buflends[bufring4->index1+1] = bufring4->len;
+//    buflends[bufring4->index1+1] = bufring4->len;
     bufring4->len = bufring4->len + 2;
     bufring4->index = (bufring4->index + 2) % (1024-32);
 //bufring4->corelock = 0;
