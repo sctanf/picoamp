@@ -639,7 +639,10 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
     switch (cur_alt)
     {
     case 1: // 32bit
-        count = (usb_buffer->data_len + 256) / 8; // the packet size is overflowing!!!
+        if (sizeof(usb_buffer->data_len) > 1) // for pico_extras with fixed EP buffer size limit https://github.com/raspberrypi/pico-extras/pull/78
+            count = usb_buffer->data_len / 8;
+        else
+            count = (usb_buffer->data_len + 256) / 8; // the packet size is overflowing!!!
         {
             int32_t *in = (int32_t *) usb_buffer->data;
             for (int i = 0; i < count * 2; i++)
@@ -647,7 +650,10 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
         }
         break;
     case 2: // 24bit
-        count = (usb_buffer->data_len + 256) / 6; // the packet size is overflowing!!!
+        if (sizeof(usb_buffer->data_len) > 1) // for pico_extras with fixed EP buffer size limit https://github.com/raspberrypi/pico-extras/pull/78
+            count = usb_buffer->data_len / 6;
+        else
+            count = (usb_buffer->data_len + 256) / 6; // the packet size is overflowing!!!
         {
             uint8_t *in = (uint8_t *) usb_buffer->data;
             for (int i = 0; i < count * 2; i += 2) {
