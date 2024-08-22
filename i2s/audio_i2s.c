@@ -53,9 +53,12 @@ bufring2=bufring1;
 cpu_freq = freq;
 }
 
+// minimum target without popping: -1 (?)
+#define TARGET_BUFFER_LENGTH 0
+
 //uint32_t buflends[8192];
 void audioi2sconstuff2() {
-    uint32_t divider = (cpu_freq * 2 / 48000) - ((bufring2->len - 16)/2);
+    uint32_t divider = (cpu_freq * 2 / 48000) - ((bufring2->len - TARGET_BUFFER_LENGTH) / 2);
 //    buflends[bufring2->index1] = divider;
     pio_sm_set_clkdiv_int_frac(audio_pio, shared_state.pio_sm, divider >> 8u, divider & 0xffu);
 }
