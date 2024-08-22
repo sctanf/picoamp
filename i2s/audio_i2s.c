@@ -53,8 +53,10 @@ bufring2=bufring1;
 cpu_freq = freq;
 }
 
-// minimum target without popping: -1 (?)
-#define TARGET_BUFFER_LENGTH 0
+// minimum target without popping: -1 (probably the pi clock naturally runs slower than the computer)
+// max: ~800 (400 samples or 8.3ms)
+// can be set to 0, the buffer will nominally be emptied on time
+#define TARGET_BUFFER_LENGTH 16 // 0.167ms
 
 //uint32_t buflends[8192];
 void audioi2sconstuff2() {
