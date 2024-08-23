@@ -135,6 +135,7 @@ const audio_format_t *audio_i2s_in_setup(const audio_i2s_config_t *config) {
                             DREQ_PIOx_RX0 + sm
     );
     channel_config_set_transfer_data_size(&dma_config, i2s_dma_configure_size);
+    channel_config_set_write_increment(&dma_config, true);
     dma_channel_configure(dma_channel,
                           &dma_config,
                           NULL,  // dest
@@ -153,10 +154,8 @@ static void update_pio_frequency(uint32_t sample_freq) {
     shared_state.freq = sample_freq;
 }
 
+static uint32_t zero[2];
 static inline void audio_start_dma_transfer() {
-    dma_channel_config c = dma_get_channel_config(shared_state.dma_channel);
-    channel_config_set_read_increment(&c, true);
-    dma_channel_set_config(shared_state.dma_channel, &c, false);
 mutex_enter_blocking(&bufring2->corelock2);
     if (bufring2->len < 2) {
 mutex_exit(&bufring2->corelock2);
@@ -168,9 +167,6 @@ while (bufring2->len < 2) {tight_loop_contents();}
 irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, true);
 pio_sm_set_enabled(audio_pio, shared_state.pio_sm, true);
 */
-        static uint32_t zero;
-        channel_config_set_read_increment(&c, false);
-        dma_channel_set_config(shared_state.dma_channel, &c, false);
         dma_channel_transfer_from_buffer_now(shared_state.dma_channel, &zero, 2);
         return;
     }
@@ -183,10 +179,7 @@ mutex_exit(&bufring2->corelock2);
 
 static inline void audio_in_start_dma_transfer() {
 mutex_enter_blocking(&bufring4->corelock2);
-    dma_channel_config c = dma_get_channel_config(shared_state2.dma_channel);
-    channel_config_set_write_increment(&c, true);
-    dma_channel_set_config(shared_state2.dma_channel, &c, false);
-    dma_channel_transfer_to_buffer_now(shared_state2.dma_channel, bufring4->buf+bufring4->index1, 2);
+    dma_channel_transfer_to_buffer_now(shared_state2.dma_channel, bufring4->buf+bufring4->index, 2);
     bufring4->len = bufring4->len + 2;
     bufring4->index = (bufring4->index + 2) % (1024-32);
 mutex_exit(&bufring4->corelock2);
