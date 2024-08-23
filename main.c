@@ -622,8 +622,8 @@ static struct {
 };
 
 uint64_t bass_step_time = 0;
-uint64_t times[1024];
-int timei = 0;
+//uint64_t times[1024];
+//int timei = 0;
 static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // total 733 us + 87 us
     uint64_t now_time = time_us_64();
 
@@ -810,10 +810,7 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
 
     for (int i = 0; i < count * 2; i++)
         buf0[i] = buf0[i] << HEADROOM;
-//    while (bufring1.len > 1024-32-2-(count * 2)) {tight_loop_contents();}
 mutex_enter_blocking(&bufring1.corelock2);
-//while (bufring1.corelock == 2) {tight_loop_contents();}
-//bufring1.corelock = 1; // 20us
     audioi2sconstuff2();
     int curin = bufring1.index;
     for (int i = 0; i < count * 2; i++) {
@@ -825,11 +822,7 @@ mutex_enter_blocking(&bufring1.corelock2);
     }
     bufring1.len = bufring1.len + count * 2;
     bufring1.index = (bufring1.index + count * 2) % (1024-32);
-//bufring1.corelock = 0;
 mutex_exit(&bufring1.corelock2);
-    times[timei] = time_us_64() - now_time;
-    timei++;
-    timei %= 1024;
 }
 
 static void _as_sync_packet(struct usb_endpoint *ep) {
