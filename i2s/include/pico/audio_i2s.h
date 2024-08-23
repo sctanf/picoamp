@@ -112,7 +112,6 @@ int32_t buf[1024];
 int len;
 int index;
 int index1;
-//int corelock;
 mutex_t corelock2;
 } bufring_t;
 void audioi2sconstuff(bufring_t *bufring1, uint32_t freq);
