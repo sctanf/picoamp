@@ -53,11 +53,6 @@ bufring2=bufring1;
 cpu_freq = freq;
 }
 
-// minimum target without popping: -1 (probably the pi clock naturally runs slower than the computer)
-// max: ~800 (400 samples or 8.3ms)
-// can be set to 0, the buffer will nominally be emptied on time
-#define TARGET_BUFFER_LENGTH 16 // 0.167ms
-
 //uint32_t buflends[8192];
 void audioi2sconstuff2() {
     uint32_t divider = (cpu_freq * 2 / 48000) - ((bufring2->len - TARGET_BUFFER_LENGTH) / 2);
@@ -156,9 +151,7 @@ static void update_pio_frequency(uint32_t sample_freq) {
 
 static uint32_t zero[2];
 static inline void audio_start_dma_transfer() {
-mutex_enter_blocking(&bufring2->corelock2);
     if (bufring2->len < 2) {
-mutex_exit(&bufring2->corelock2);
         // just play some silence
 /*
 irq_set_enabled(DMA_IRQ_0 + PICO_AUDIO_I2S_DMA_IRQ, false);
@@ -170,9 +163,11 @@ pio_sm_set_enabled(audio_pio, shared_state.pio_sm, true);
         dma_channel_transfer_from_buffer_now(shared_state.dma_channel, &zero, 2);
         return;
     }
-    dma_channel_transfer_from_buffer_now(shared_state.dma_channel, bufring2->buf+bufring2->index1, 2);
-    bufring2->len = bufring2->len - 2;
-    bufring2->index1 = (bufring2->index1 + 2) % (1024-32);
+    dma_channel_transfer_from_buffer_now(shared_state.dma_channel, bufring2->buf + bufring2->index, 2);
+mutex_enter_blocking(&bufring2->corelock2);
+    bufring2->len -= 2;
+    bufring2->index += 2;
+    bufring2->index %= BUFRING_SIZE;
 mutex_exit(&bufring2->corelock2);
     return;
 }

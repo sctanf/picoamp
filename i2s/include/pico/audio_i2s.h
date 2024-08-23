@@ -107,13 +107,19 @@ extern "C" {
 #define PICO_AUDIO_I2S_CLOCK_PIN_BASE 26
 #endif
 
+// minimum target without popping: -1 (probably the pi clock naturally runs slower than the computer)
+// max: ~800 (400 samples or 8.3ms)
+// can be set to 0, the buffer will nominally be emptied on time
+#define TARGET_BUFFER_LENGTH 16 // 0.167ms
+
+#define BUFRING_SIZE 128
 typedef struct bufring {
-int32_t buf[1024];
+int32_t buf[BUFRING_SIZE];
 int len;
 int index;
-int index1;
 mutex_t corelock2;
 } bufring_t;
+
 void audioi2sconstuff(bufring_t *bufring1, uint32_t freq);
 void audioi2sconstuff2();
 void audioi2sconstuff3(bufring_t *bufring3);

@@ -48,7 +48,6 @@ biquad(eq_bq_18)
 bufring_t bufring1 = {
 .len = 0,
 .index = 0,
-.index1 = 0,
 };
 
 //#define PASSTHRU_ENABLE
@@ -719,7 +718,7 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
 #endif
 
     // volume
-    dspfx volume_mul[256] = {0};
+    dspfx volume_mul[96] = {0};
     for (int i = 0; i < count; i++) { // 25 us
         if (actual_vol - VOL_STEP > vol_mul)
             actual_vol -= VOL_STEP;
@@ -810,18 +809,15 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
 
     for (int i = 0; i < count * 2; i++)
         buf0[i] = buf0[i] << HEADROOM;
-mutex_enter_blocking(&bufring1.corelock2);
     audioi2sconstuff2();
-    int curin = bufring1.index;
+mutex_enter_blocking(&bufring1.corelock2);
+    int curin = bufring1.index + bufring1.len;
     for (int i = 0; i < count * 2; i++) {
+        curin %= BUFRING_SIZE;
         bufring1.buf[curin] = buf0[i];
-        if (curin < 32)
-            bufring1.buf[curin+1024-32] = bufring1.buf[curin];
         curin++;
-        curin %= 1024-32;
     }
-    bufring1.len = bufring1.len + count * 2;
-    bufring1.index = (bufring1.index + count * 2) % (1024-32);
+    bufring1.len += count * 2;
 mutex_exit(&bufring1.corelock2);
 }
 
