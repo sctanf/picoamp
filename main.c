@@ -809,8 +809,8 @@ static void __not_in_flash_func(_as_audio_packet)(struct usb_endpoint *ep) { // 
 
     for (int i = 0; i < count * 2; i++)
         buf0[i] = buf0[i] << HEADROOM;
-    audioi2sconstuff2();
 mutex_enter_blocking(&bufring1.corelock2);
+    audioi2sconstuff2();
     int curin = bufring1.index + bufring1.len;
     for (int i = 0; i < count * 2; i++) {
         curin %= BUFRING_SIZE;
