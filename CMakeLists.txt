@@ -1,4 +1,21 @@
-cmake_minimum_required(VERSION 3.12)
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.1.0)
+set(toolchainVersion 13_3_Rel1)
+set(picotoolVersion 2.1.0)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
+set(PICO_BOARD pico CACHE STRING "Board type")
+set(PICO_EXTRAS_FETCH_FROM_GIT 1 CACHE BOOL "Fetch pico-extras from git")
+
+cmake_minimum_required(VERSION 3.13)
 
 # Pull in PICO SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -38,6 +55,9 @@ target_compile_definitions(pico_amp PRIVATE
         PICO_AUDIO_I2S_CLOCK_PIN_BASE=16
 
         PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64
+
+        # Performance, avoid calls to ____wrap___aeabi_lmul_veneer when doing 64bit multiplies
+        PICO_INT64_OPS_IN_RAM=1
 )
 target_compile_definitions(slower_boot2 PRIVATE
         #MG - 7/30/2024
