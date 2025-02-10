@@ -16,6 +16,7 @@
 #include "dsp/dsp.h"
 
 #include "hardware/vreg.h"
+#include "hardware/clocks.h"
 
 // dsp audio buffers
 dspfx buf0[192];
