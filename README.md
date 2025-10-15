@@ -1,3 +1,5 @@
+## Updated! https://github.com/sctanf/picoamp-2
+
 ## firmware presets
 ~~Note: most of these are, in the end, tuned by my ear and could sound a bit "off," you can use passthru fw if you do not need any dsp feature and/or will use software dsp~~
 
